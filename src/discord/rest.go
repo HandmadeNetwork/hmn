@@ -9,9 +9,9 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
-	"net/http/httputil"
 	"net/textproto"
 	"net/url"
+	"os"
 	"strconv"
 
 	"git.handmade.network/hmn/hmn/src/config"
@@ -39,7 +39,11 @@ func buildUrl(path string) string {
 	return fmt.Sprintf("%s%s", BaseUrl, path)
 }
 
-func makeRequest(ctx context.Context, method string, path string, body []byte) *http.Request {
+// NOTE(ben): Creates an [http.Request] to send to Discord, with the correct
+// auth and user-agent headers. Also attaches the given body to the request. In
+// many cases the request will need to be modified further, e.g. setting
+// Content-Type or query params.
+func createTypicalRequest(ctx context.Context, method string, path string, body []byte) *http.Request {
 	var bodyReader io.Reader
 	if body != nil {
 		bodyReader = bytes.NewBuffer(body)
@@ -55,149 +59,137 @@ func makeRequest(ctx context.Context, method string, path string, body []byte) *
 	return req
 }
 
+// NOTE(ben): Performs the given request with rate limiting and returns the
+// response + the full response body. Returns an error if the status code is
+// not in the OK range. 404s are always turned into [NotFound] errors.
+//
+// If you want to read the response as JSON, use [unmarshal] with the results.
+//
+// In most cases you can use [doSimpleGetRequest] for GET,
+// [doSimplePostishRequest] for POST or PATCH etc., and [doSimpleDeleteRequest]
+// for DELETE.
+func doRequest(ctx context.Context, name string, getReq func(context.Context) *http.Request) (context.Context, *http.Response, []byte, error) {
+	l := logging.ExtractLogger(ctx).With().Str("name", name).Logger()
+	ctx = logging.AttachLoggerToContext(&l, ctx)
+
+	res, err := doWithRateLimiting(ctx, name, getReq)
+	if err != nil {
+		return ctx, nil, nil, err
+	}
+	defer res.Body.Close()
+
+	bodyBytes := utils.Must1(io.ReadAll(res.Body))
+	if res.StatusCode == http.StatusNotFound {
+		return ctx, nil, nil, NotFound
+	} else if res.StatusCode >= 400 {
+		logErrorResponse(ctx, res, bodyBytes, "")
+		return ctx, nil, nil, oops.New(nil, "received error from Discord")
+	}
+
+	return ctx, res, bodyBytes, nil
+}
+
+// NOTE(ben): Takes the result of [doRequest] and unmarshals the result
+// as JSON.
+func unmarshal[T any](_ context.Context, _ *http.Response, body []byte, err error) (T, error) {
+	var zero T
+	if err != nil {
+		return zero, err
+	}
+
+	var payload T
+	err = json.Unmarshal(body, &payload)
+	if err != nil {
+		return zero, oops.New(err, "failed to unmarshal Discord message")
+	}
+	return payload, nil
+}
+
+// NOTE(ben): Takes the result of [doRequest] and discards everything but the
+// error.
+func discard(_ context.Context, _ *http.Response, _ []byte, err error) error {
+	return err
+}
+
+// NOTE(ben): Takes the result of [doRequest] and asserts that the result
+// was a 204 No Content.
+func expectNoContent(ctx context.Context, res *http.Response, body []byte, err error) error {
+	if err != nil {
+		return err
+	}
+	if res.StatusCode != http.StatusNoContent {
+		logErrorResponse(ctx, res, body, "")
+		return oops.New(nil, "expected 204 but got %d", res.StatusCode)
+	}
+	return nil
+}
+
+// NOTE(ben): Does a GET request to the given path and unmarshals the result.
+func doSimpleGetRequest[T any](ctx context.Context, name, path string) (T, error) {
+	return unmarshal[T](doRequest(ctx, name, func(ctx context.Context) *http.Request {
+		return createTypicalRequest(ctx, http.MethodGet, path, nil)
+	}))
+}
+
+// NOTE(ben): Does a request with a method, content-type, and body of your
+// choice. Designed to work for POST, PATCH, and similar where you don't need
+// to provide other headers. Does not do anything with the result, so consider
+// using [unmarshal], [expectNoContent], etc.
+func doSimplePostishRequest(ctx context.Context, name, method, path, contentType string, body []byte) (context.Context, *http.Response, []byte, error) {
+	return doRequest(ctx, name, func(ctx context.Context) *http.Request {
+		req := createTypicalRequest(ctx, method, path, body)
+		req.Header.Add("Content-Type", contentType)
+		return req
+	})
+}
+
+// NOTE(ben): Does a DELETE request to the given path and expects a 204.
+func doSimpleDeleteRequest(ctx context.Context, name, path string) error {
+	return expectNoContent(doRequest(ctx, name, func(ctx context.Context) *http.Request {
+		return createTypicalRequest(ctx, http.MethodDelete, path, nil)
+	}))
+}
+
 type GetGatewayBotResponse struct {
 	URL string `json:"url"`
 	// We don't care about shards or session limit stuff; we will never hit those limits
 }
 
-func GetGatewayBot(ctx context.Context) (*GetGatewayBotResponse, error) {
-	const name = "Get Gateway Bot"
-
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		return makeRequest(ctx, http.MethodGet, "/gateway/bot", nil)
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != 200 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var result GetGatewayBotResponse
-	err = json.Unmarshal(body, &result)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord response")
-	}
-
-	return &result, nil
+// https://docs.discord.com/developers/events/gateway#get-gateway-bot
+func GetGatewayBot(ctx context.Context) (GetGatewayBotResponse, error) {
+	return doSimpleGetRequest[GetGatewayBotResponse](ctx, "Get Gateway Bot", "/gateway/bot")
 }
 
+// https://docs.discord.com/developers/resources/guild#get-guild-roles
 func GetGuildRoles(ctx context.Context, guildID string) ([]Role, error) {
-	const name = "Get Guild Roles"
-
 	path := fmt.Sprintf("/guilds/%s/roles", guildID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		return makeRequest(ctx, http.MethodGet, path, nil)
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var roles []Role
-	err = json.Unmarshal(bodyBytes, &roles)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord message")
-	}
-
-	return roles, nil
+	return doSimpleGetRequest[[]Role](ctx, "Get Guild Roles", path)
 }
 
+// https://docs.discord.com/developers/resources/guild#get-guild-channels
 func GetGuildChannels(ctx context.Context, guildID string) ([]Channel, error) {
-	const name = "Get Guild Channels"
-
 	path := fmt.Sprintf("/guilds/%s/channels", guildID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		return makeRequest(ctx, http.MethodGet, path, nil)
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var channels []Channel
-	err = json.Unmarshal(bodyBytes, &channels)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord message")
-	}
-
-	return channels, nil
+	return doSimpleGetRequest[[]Channel](ctx, "Get Guild Channels", path)
 }
 
-func GetGuildMember(ctx context.Context, guildID, userID string) (*GuildMember, error) {
-	const name = "Get Guild Member"
-
+// https://docs.discord.com/developers/resources/guild#get-guild-member
+func GetGuildMember(ctx context.Context, guildID, userID string) (GuildMember, error) {
 	path := fmt.Sprintf("/guilds/%s/members/%s", guildID, userID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		return makeRequest(ctx, http.MethodGet, path, nil)
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return nil, NotFound
-	} else if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var msg GuildMember
-	err = json.Unmarshal(bodyBytes, &msg)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord message")
-	}
-
-	return &msg, nil
+	return doSimpleGetRequest[GuildMember](ctx, "Get Guild Member", path)
 }
 
 // WARNING: This function is very expensive, as it must make several paginated requests. It will
 // block while doing so. It will also allocate memory for all of the guild members too. Please
 // consider whether you actually need to do this, and take appropriate precautions if you must.
 func ListGuildMembers(ctx context.Context, guildID string) ([]GuildMember, error) {
-	const name = "List Guild Members"
 	path := fmt.Sprintf("/guilds/%s/members", guildID)
 	const limit = 1000
 
 	var allMembers []GuildMember
 	var lastID string
 	for {
-		res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-			req := makeRequest(ctx, http.MethodGet, path, nil)
+		msg, err := unmarshal[[]GuildMember](doRequest(ctx, "List Guild Members", func(ctx context.Context) *http.Request {
+			req := createTypicalRequest(ctx, http.MethodGet, path, nil)
 			q := req.URL.Query()
 			q.Add("limit", strconv.Itoa(limit))
 			if lastID != "" {
@@ -206,28 +198,9 @@ func ListGuildMembers(ctx context.Context, guildID string) ([]GuildMember, error
 			req.URL.RawQuery = q.Encode()
 
 			return req
-		})
+		}))
 		if err != nil {
 			return nil, err
-		}
-		defer res.Body.Close()
-
-		if res.StatusCode == http.StatusNotFound {
-			return nil, NotFound
-		} else if res.StatusCode >= 400 {
-			logErrorResponse(ctx, name, res, "")
-			return nil, oops.New(nil, "received error from Discord")
-		}
-
-		bodyBytes, err := io.ReadAll(res.Body)
-		if err != nil {
-			panic(err)
-		}
-
-		var msg []GuildMember
-		err = json.Unmarshal(bodyBytes, &msg)
-		if err != nil {
-			return nil, oops.New(err, "failed to unmarshal Discord message")
 		}
 
 		if len(msg) > 0 {
@@ -267,134 +240,34 @@ type CreateMessageRequest struct {
 	AllowedMentions *MessageAllowedMentions `json:"allowed_mentions,omitempty"`
 }
 
-func CreateMessage(ctx context.Context, channelID string, payloadJSON string, files ...FileUpload) (*Message, error) {
-	const name = "Create Message"
-
-	contentType, body := makeNewMessageBody(payloadJSON, files)
-
+// https://docs.discord.com/developers/resources/message#create-message
+func CreateMessage(ctx context.Context, channelID string, payloadJSON string, files ...FileUpload) (Message, error) {
 	path := fmt.Sprintf("/channels/%s/messages", channelID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req := makeRequest(ctx, http.MethodPost, path, body)
-		req.Header.Add("Content-Type", contentType)
-		return req
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	// Maybe in the future we could more nicely handle errors like "bad channel",
-	// but honestly what are the odds that we mess that up...
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var msg Message
-	err = json.Unmarshal(bodyBytes, &msg)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord message")
-	}
-
-	return &msg, nil
-}
-
-func EditMessage(ctx context.Context, channelID string, messageID string, payloadJSON string, files ...FileUpload) (*Message, error) {
-	const name = "Edit Message"
-
 	contentType, body := makeNewMessageBody(payloadJSON, files)
-
-	path := fmt.Sprintf("/channels/%s/messages/%s", channelID, messageID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req := makeRequest(ctx, http.MethodPatch, path, body)
-		req.Header.Add("Content-Type", contentType)
-		return req
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
+	return unmarshal[Message](doSimplePostishRequest(ctx, "Create Message", http.MethodPost, path, contentType, body))
 
 	// Maybe in the future we could more nicely handle errors like "bad channel",
 	// but honestly what are the odds that we mess that up...
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var msg Message
-	err = json.Unmarshal(bodyBytes, &msg)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord message")
-	}
-
-	return &msg, nil
 }
 
-func DeleteMessage(ctx context.Context, channelID string, messageID string) error {
-	const name = "Delete Message"
-
+// https://docs.discord.com/developers/resources/message#edit-message
+func EditMessage(ctx context.Context, channelID string, messageID string, payloadJSON string, files ...FileUpload) (Message, error) {
 	path := fmt.Sprintf("/channels/%s/messages/%s", channelID, messageID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		return makeRequest(ctx, http.MethodDelete, path, nil)
-	})
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusNoContent {
-		logErrorResponse(ctx, name, res, "")
-		return oops.New(nil, "got unexpected status code when deleting message")
-	}
-
-	return nil
+	contentType, body := makeNewMessageBody(payloadJSON, files)
+	return unmarshal[Message](doSimplePostishRequest(ctx, "Edit Message", http.MethodPatch, path, contentType, body))
 }
 
-func CreateDM(ctx context.Context, recipientID string) (*Channel, error) {
-	const name = "Create DM"
+// https://docs.discord.com/developers/resources/message#delete-message
+func DeleteMessage(ctx context.Context, channelID string, messageID string) error {
+	path := fmt.Sprintf("/channels/%s/messages/%s", channelID, messageID)
+	return doSimpleDeleteRequest(ctx, "Delete Message", path)
+}
 
+// https://docs.discord.com/developers/resources/user#create-dm
+func CreateDM(ctx context.Context, recipientID string) (Channel, error) {
 	path := "/users/@me/channels"
 	body := fmt.Appendf(nil, `{"recipient_id":"%s"}`, recipientID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req := makeRequest(ctx, http.MethodPost, path, body)
-		req.Header.Add("Content-Type", "application/json")
-		return req
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var channel Channel
-	err = json.Unmarshal(bodyBytes, &channel)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord channel")
-	}
-
-	return &channel, nil
+	return unmarshal[Channel](doSimplePostishRequest(ctx, "Create DM", http.MethodPost, path, "application/json", body))
 }
 
 type OAuthCodeExchangeResponse struct {
@@ -405,9 +278,7 @@ type OAuthCodeExchangeResponse struct {
 	Scope        string `json:"scope"`
 }
 
-func ExchangeOAuthCode(ctx context.Context, code, redirectURI string) (*OAuthCodeExchangeResponse, error) {
-	const name = "OAuth Code Exchange"
-
+func ExchangeOAuthCode(ctx context.Context, code, redirectURI string) (OAuthCodeExchangeResponse, error) {
 	body := make(url.Values)
 	body.Set("client_id", config.Config.Discord.OAuthClientID)
 	body.Set("client_secret", config.Config.Discord.OAuthClientSecret)
@@ -416,40 +287,16 @@ func ExchangeOAuthCode(ctx context.Context, code, redirectURI string) (*OAuthCod
 	body.Set("redirect_uri", redirectURI)
 	bodyStr := body.Encode()
 
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req := makeRequest(ctx, http.MethodPost, "/oauth2/token", []byte(bodyStr))
-		req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
-
-		return req
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var tokenResponse OAuthCodeExchangeResponse
-	err = json.Unmarshal(bodyBytes, &tokenResponse)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord OAuth token")
-	}
-
-	return &tokenResponse, nil
+	return unmarshal[OAuthCodeExchangeResponse](doSimplePostishRequest(ctx,
+		"OAuth Code Exchange",
+		http.MethodPost, "/oauth2/token",
+		"application/x-www-form-urlencoded", []byte(bodyStr),
+	))
 }
 
-func GetCurrentUserAsOAuth(ctx context.Context, accessToken string) (*User, error) {
-	const name = "Get Current User"
-
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
+// https://docs.discord.com/developers/resources/user#get-current-user
+func GetCurrentUserAsOAuth(ctx context.Context, accessToken string) (User, error) {
+	return unmarshal[User](doRequest(ctx, "Get Current User", func(ctx context.Context) *http.Request {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, buildUrl("/users/@me"), nil)
 		if err != nil {
 			panic(err)
@@ -458,102 +305,33 @@ func GetCurrentUserAsOAuth(ctx context.Context, accessToken string) (*User, erro
 		req.Header.Add("User-Agent", UserAgent)
 
 		return req
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var user User
-	err = json.Unmarshal(bodyBytes, &user)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord user")
-	}
-
-	return &user, nil
+	}))
 }
 
-func AddGuildMemberRole(ctx context.Context, userID, roleID string) error {
-	const name = "Add Guild Member Role"
-
+// https://docs.discord.com/developers/resources/guild#add-guild-member-role
+func AddGuildMemberRole(ctx context.Context, userID, roleID, reason string) error {
 	path := fmt.Sprintf("/guilds/%s/members/%s/roles/%s", config.Config.Discord.GuildID, userID, roleID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		return makeRequest(ctx, http.MethodPut, path, nil)
-	})
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusNoContent {
-		logErrorResponse(ctx, name, res, "")
-		return oops.New(nil, "got unexpected status code when adding role")
-	}
-
-	return nil
+	return expectNoContent(doRequest(ctx, "Add Guild Member Role", func(ctx context.Context) *http.Request {
+		req := createTypicalRequest(ctx, http.MethodPut, path, nil)
+		req.Header.Add("X-Audit-Log-Reason", reason)
+		return req
+	}))
 }
 
-func RemoveGuildMemberRole(ctx context.Context, userID, roleID string) error {
-	const name = "Remove Guild Member Role"
-
+// https://docs.discord.com/developers/resources/guild#remove-guild-member-role
+func RemoveGuildMemberRole(ctx context.Context, userID, roleID, reason string) error {
 	path := fmt.Sprintf("/guilds/%s/members/%s/roles/%s", config.Config.Discord.GuildID, userID, roleID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		return makeRequest(ctx, http.MethodDelete, path, nil)
-	})
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusNoContent {
-		logErrorResponse(ctx, name, res, "")
-		return oops.New(nil, "got unexpected status code when removing role")
-	}
-
-	return nil
+	return expectNoContent(doRequest(ctx, "Remove Guild Member Role", func(ctx context.Context) *http.Request {
+		req := createTypicalRequest(ctx, http.MethodDelete, path, nil)
+		req.Header.Add("X-Audit-Log-Reason", reason)
+		return req
+	}))
 }
 
-func GetChannelMessage(ctx context.Context, channelID, messageID string) (*Message, error) {
-	const name = "Get Channel Message"
-
+// https://docs.discord.com/developers/resources/message#get-channel-message
+func GetChannelMessage(ctx context.Context, channelID, messageID string) (Message, error) {
 	path := fmt.Sprintf("/channels/%s/messages/%s", channelID, messageID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		return makeRequest(ctx, http.MethodGet, path, nil)
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode == http.StatusNotFound {
-		return nil, NotFound
-	} else if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var msg Message
-	err = json.Unmarshal(bodyBytes, &msg)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord message")
-	}
-
-	return &msg, nil
+	return doSimpleGetRequest[Message](ctx, "Get Channel Message", path)
 }
 
 type GetChannelMessagesInput struct {
@@ -563,12 +341,11 @@ type GetChannelMessagesInput struct {
 	Limit  int
 }
 
+// https://docs.discord.com/developers/resources/message#get-channel-messages
 func GetChannelMessages(ctx context.Context, channelID string, in GetChannelMessagesInput) ([]Message, error) {
-	const name = "Get Channel Messages"
-
 	path := fmt.Sprintf("/channels/%s/messages", channelID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req := makeRequest(ctx, http.MethodGet, path, nil)
+	return unmarshal[[]Message](doRequest(ctx, "Get Channel Messages", func(ctx context.Context) *http.Request {
+		req := createTypicalRequest(ctx, http.MethodGet, path, nil)
 		q := req.URL.Query()
 		if in.Around != "" {
 			q.Add("around", in.Around)
@@ -585,29 +362,7 @@ func GetChannelMessages(ctx context.Context, channelID string, in GetChannelMess
 		req.URL.RawQuery = q.Encode()
 
 		return req
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var msgs []Message
-	err = json.Unmarshal(bodyBytes, &msgs)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord message")
-	}
-
-	return msgs, nil
+	}))
 }
 
 // See https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command-json-params
@@ -622,96 +377,47 @@ type CreateGuildApplicationCommandRequest struct {
 
 // See https://discord.com/developers/docs/interactions/application-commands#create-guild-application-command
 func CreateGuildApplicationCommand(ctx context.Context, in CreateGuildApplicationCommandRequest) error {
-	const name = "Create Guild Application Command"
-
 	if in.Type == 0 {
 		in.Type = ApplicationCommandTypeChatInput
 	}
-
-	payloadJSON, err := json.Marshal(in)
-	if err != nil {
-		return oops.New(nil, "failed to marshal request body")
-	}
+	payloadJSON := utils.Must1(json.Marshal(in))
 
 	path := fmt.Sprintf("/applications/%s/guilds/%s/commands", config.Config.Discord.BotUserID, config.Config.Discord.GuildID)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req := makeRequest(ctx, http.MethodPost, path, []byte(payloadJSON))
-		req.Header.Add("Content-Type", "application/json")
-		return req
-	})
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return oops.New(nil, "received error from Discord")
-	}
-
-	return nil
+	return discard(doSimplePostishRequest(ctx,
+		"Create Guild Application Command",
+		http.MethodPost, path,
+		"application/json", payloadJSON,
+	))
 }
 
+// https://docs.discord.com/developers/interactions/receiving-and-responding#create-interaction-response
 func CreateInteractionResponse(ctx context.Context, interactionID, interactionToken string, in InteractionResponse) error {
-	const name = "Create Interaction Response"
-
 	payloadJSON, err := json.Marshal(in)
 	if err != nil {
 		return oops.New(nil, "failed to marshal request body")
 	}
 
+	// NOTE(ben): There is a flavor of this API now where we could get an
+	// Interaction Callback Response. Evidently we don't need this right now, but
+	// in the future it might be good to switch to that version here.
 	path := fmt.Sprintf("/interactions/%s/%s/callback", interactionID, interactionToken)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req := makeRequest(ctx, http.MethodPost, path, []byte(payloadJSON))
-		req.Header.Add("Content-Type", "application/json")
-		return req
-	})
-	if err != nil {
-		return err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return oops.New(nil, "received error from Discord")
-	}
-
-	return nil
+	return discard(doSimplePostishRequest(ctx,
+		"Create Interaction Response",
+		http.MethodPost, path,
+		"application/json", payloadJSON,
+	))
 }
 
-func EditOriginalInteractionResponse(ctx context.Context, interactionToken string, payloadJSON string, files ...FileUpload) (*Message, error) {
-	const name = "Edit Original Interaction Response"
-
+// https://docs.discord.com/developers/interactions/receiving-and-responding#edit-original-interaction-response
+func EditOriginalInteractionResponse(ctx context.Context, interactionToken string, payloadJSON string, files ...FileUpload) (Message, error) {
 	contentType, body := makeNewMessageBody(payloadJSON, files)
 
 	path := fmt.Sprintf("/webhooks/%s/%s/messages/@original", config.Config.Discord.BotUserID, interactionToken)
-	res, err := doWithRateLimiting(ctx, name, func(ctx context.Context) *http.Request {
-		req := makeRequest(ctx, http.MethodPatch, path, body)
-		req.Header.Add("Content-Type", contentType)
-		return req
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode >= 400 {
-		logErrorResponse(ctx, name, res, "")
-		return nil, oops.New(nil, "received error from Discord")
-	}
-
-	bodyBytes, err := io.ReadAll(res.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	var msg Message
-	err = json.Unmarshal(bodyBytes, &msg)
-	if err != nil {
-		return nil, oops.New(err, "failed to unmarshal Discord message")
-	}
-
-	return &msg, nil
+	return unmarshal[Message](doSimplePostishRequest(ctx,
+		"Edit Original Interaction Response",
+		http.MethodPatch, path,
+		contentType, body,
+	))
 }
 
 func GetAuthorizeUrl(state string, includeEmail bool) string {
@@ -767,12 +473,8 @@ func makeNewMessageBody(payloadJSON string, files []FileUpload) (contentType str
 	return
 }
 
-func logErrorResponse(ctx context.Context, name string, res *http.Response, msg string) {
-	dump, err := httputil.DumpResponse(res, true)
-	if err != nil {
-		panic(err)
-	}
-
-	logging.ExtractLogger(ctx).Error().Str("name", name).Msg(msg)
-	fmt.Println(string(dump))
+func logErrorResponse(ctx context.Context, res *http.Response, bodyBytes []byte, msg string) {
+	logging.ExtractLogger(ctx).Error().Msg(msg)
+	res.Write(os.Stderr)
+	os.Stderr.Write(bodyBytes)
 }
