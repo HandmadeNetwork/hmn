@@ -20,6 +20,7 @@ import (
 )
 
 const JamRecentWindow = 14 * 24 * time.Hour
+const MaxBetaWeekSignups = 3
 
 func JamCurrentTime(c *RequestContext, ev hmndata.Event) time.Time {
 	t := time.Now()
@@ -287,9 +288,13 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 	type Tmpl struct {
 		templates.BaseData
 		IndexUrl           string
+		SignupUrl          string
+		LoginUrl           string // for unauthenticated users
 		CallForProjectsUrl string
 
-		Projects []templates.BetaWeekProjectSubmission
+		Projects       []templates.BetaWeekProjectSubmission
+		CurrentSignups []int
+		MaxSignups     int
 	}
 
 	approvedSubmissions, err := db.Query[models.BetaWeekProjectSubmission](c, c.Conn,
@@ -318,11 +323,11 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 
 	testersPerProjectRows, err := db.Query[struct {
 		ProjectID  int `db:"project_id"`
-		NumTesters int `db:"num_testers"`
+		NumTesters int `db:"COUNT(*)"`
 	}](c, c.Conn,
 		`
 		---- Fetch number of testers per project
-		SELECT project_id, COUNT(*) AS num_testers FROM betaweek_testing_signup
+		SELECT $columns AS num_testers FROM betaweek_testing_signup
 		GROUP BY project_id
 		`,
 	)
@@ -331,9 +336,24 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 		testersPerProject[row.ProjectID] = row.NumTesters
 	}
 
+	var currentSignups []int
+	if c.CurrentUser != nil {
+		currentSignups = utils.Must1(db.QueryScalar[int](c, c.Conn,
+			`
+			---- Fetch current user signups
+			SELECT project_id FROM betaweek_testing_signup
+			WHERE user_id = $1
+			ORDER BY project_id
+			`,
+			c.CurrentUser.ID,
+		))
+	}
+
 	tmpl := Tmpl{
 		BaseData:           getBaseTemplateData(c, "Beta Week", nil),
 		IndexUrl:           hmnurl.BuildBetaWeekIndex(),
+		SignupUrl:          hmnurl.BuildAPIBetaWeekSignup(),
+		LoginUrl:           hmnurl.BuildLoginPage(hmnurl.BuildBetaWeekIndex(), ""),
 		CallForProjectsUrl: hmnurl.BuildBetaWeekCallForProjects(),
 		Projects: utils.Map(approvedSubmissions, func(ps *models.BetaWeekProjectSubmission) templates.BetaWeekProjectSubmission {
 			project := projectsByID[ps.ProjectID]
@@ -343,6 +363,8 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 				testersPerProject[ps.ProjectID] < NeedsTestersThreshold,
 			)
 		}),
+		CurrentSignups: utils.NonNullSlice(currentSignups),
+		MaxSignups:     MaxBetaWeekSignups,
 	}
 	slices.SortStableFunc(tmpl.Projects, func(a, b templates.BetaWeekProjectSubmission) int {
 		return utils.Btoi(a.NeedsTesters) - utils.Btoi(b.NeedsTesters)

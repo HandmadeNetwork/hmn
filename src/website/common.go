@@ -35,17 +35,22 @@ func loadHMNProject(h Handler) Handler {
 	}
 }
 
-func loadCurrentUserAndProject(h Handler) Handler {
-	return func(c *RequestContext) ResponseData {
-		b := c.Perf.StartBlock("MIDDLEWARE", "Load current user/project")
-		{
-			// get user
+// Gets the current user and session, if valid.
+func loadCurrentUser(useJSON bool) Middleware {
+	return func(h Handler) Handler {
+		return func(c *RequestContext) ResponseData {
+			errorResponse := c.ErrorResponse
+			if useJSON {
+				errorResponse = c.JSONErrorResponse
+			}
+
+			b := c.Perf.StartBlock("MIDDLEWARE", "Load current user")
 			{
 				sessionCookie, err := c.Req.Cookie(auth.SessionCookieName)
 				if err == nil {
 					user, session, err := getCurrentUserAndSession(c, sessionCookie.Value)
 					if err != nil {
-						return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user"))
+						return errorResponse(http.StatusInternalServerError, oops.New(err, "failed to get current user"))
 					}
 
 					c.CurrentUser = user
@@ -53,27 +58,38 @@ func loadCurrentUserAndProject(h Handler) Handler {
 				}
 				// http.ErrNoCookie is the only error Cookie ever returns, so no further handling to do here.
 			}
+			b.End()
 
-			// get current official project (HMN or otherwise, by subdomain)
-			{
-				utils.Assert(c.CurrentProject, "should already have HMN project loaded")
+			return h(c)
+		}
+	}
+}
 
-				slug := hmnurl.GetOfficialProjectSlugFromHost(c.Req.Host)
-				if len(slug) > 0 {
-					dbProject, err := hmndata.FetchProjectBySlug(c, c.Conn, c.CurrentUser, slug, hmndata.ProjectsQuery{
-						Lifecycles:    models.AllProjectLifecycles,
-						IncludeHidden: true,
-					})
-					if err == nil {
-						c.CurrentProject = &dbProject.Project
-						c.CurrentProjectExtras = dbProject
-						c.UrlContext = hmndata.UrlContextForProject(&dbProject.Project)
+// Gets the current official project by subdomain. (For personal projects, c.CurrentProject can be overridden later.)
+func loadCurrentOfficialProject(h Handler) Handler {
+	return func(c *RequestContext) ResponseData {
+		b := c.Perf.StartBlock("MIDDLEWARE", "Load current official project")
+		{
+			utils.Assert(
+				c.CurrentProject != nil && c.CurrentProject.IsHMN(),
+				"should already have HMN project loaded",
+			)
+
+			slug := hmnurl.GetOfficialProjectSlugFromHost(c.Req.Host)
+			if len(slug) > 0 {
+				dbProject, err := hmndata.FetchProjectBySlug(c, c.Conn, c.CurrentUser, slug, hmndata.ProjectsQuery{
+					Lifecycles:    models.AllProjectLifecycles,
+					IncludeHidden: true,
+				})
+				if err == nil {
+					c.CurrentProject = &dbProject.Project
+					c.CurrentProjectExtras = dbProject
+					c.UrlContext = hmndata.UrlContextForProject(&dbProject.Project)
+				} else {
+					if errors.Is(err, db.NotFound) {
+						// NOTE(ben): Do nothing, this is fine - we will default to the HMN project
 					} else {
-						if errors.Is(err, db.NotFound) {
-							// NOTE(ben): Do nothing, this is fine - we will default to the HMN project
-						} else {
-							return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
-						}
+						return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch current project"))
 					}
 				}
 			}

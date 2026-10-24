@@ -2,6 +2,15 @@
 
 {{ define "extrahead" }}
   {{ template "betaweek2026-styles" . }}
+  <script type="module">
+    import { init } from {{ static "js/betaweek_2026_index.js" }};
+    init({
+      signupUrl: {{ .SignupUrl }},
+      csrf: {{ csrftokenjs .Session }},
+      currentSignups: {{ .CurrentSignups }},
+      maxSignups: {{ .MaxSignups }},
+    });
+  </script>
 {{ end }}
 
 {{ define "content-top" }}
@@ -40,62 +49,76 @@
     </div>
   </div>
   {{ if gt (len .Projects) 0 }}
-    <div class="flex justify-center link-bold link-normal">
+    <div class="flex justify-center link-normal">
       <div class="w-100 mw-site-narrow ph3 ph0-l pv4 flex flex-column g3">
         <h3 class="f4">Projects to test</h3>
         <div>You can sign up to beta test up to three projects. Projects with very few testers are listed first.</div>
         <div class="grid grid-1 grid-2-ns g3">
           {{ range .Projects }}
-            {{ template "betaweek-submission" . }}
+            {{ $submission := . }}
+            <div class="bg1 pa3 flex flex-column g3">
+              {{ with .Project }}
+                <div class="flex g3">
+                  <a href="{{ .Url }}" class="db w3">{{ template "project_logo.html" . }}</a>
+                  <div class="flex-grow-1 flex flex-column">
+                    <a href="{{ .Url }}"><h3 class="f4">{{ .Name }}</h3></a>
+                    <hr class="mv2">
+                    <div class="flex flex-wrap items-center g2">
+                      {{ with $submission.PlatformIcons }}
+                        <!--
+                          NOTE(ben): Hardcoding to 24px because that's what our icons are and .svgicon
+                          sizes to 1em.
+                        -->
+                        <div class="flex" style="font-size: 24px; margin-left: -1px">
+                          {{ range . }}
+                            <span class="svgicon svgicon-nofix" style="height: 1em">{{ svg .Name .Title }}</span>
+                          {{ end }}
+                        </div>
+                        <div class="h1 bl"></div>
+                      {{ end }}
+                      {{ range .Owners }}
+                        <a href="{{ .ProfileUrl }}" class="flex g1 items-center b">
+                          <img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}">
+                          <span>{{ .Name }}</span>
+                        </a>
+                      {{ end }}
+                    </div>
+                  </div>
+                </div>
+              {{ end }}
+              <div class="flex-grow-1 flex flex-column g2">
+                <div class="hide-if-empty flex flex-wrap g2">
+                  {{ if .NeedsTesters }}
+                    <div class="badge betaweek-badge">Needs testers</div>
+                  {{ end }}
+                </div>
+                <div class="post-content">
+                  {{ .Description }}
+                </div>
+              </div>
+              {{ if $.User }}
+                <button class="signup-btn btn-primary" data-projectid="{{ .Project.ID }}">
+              {{ else }}
+                <!--
+                  NOTE(ben): Render a fake button that makes you log in. Because these do not have
+                  the signup-btn class, they will be ignored by JS.
+                -->
+                <a class="btn btn-primary" href="{{ $.LoginUrl }}">
+              {{ end }}
+                {{ if contains $.CurrentSignups .Project.ID }}
+                  Remove signup
+                {{ else }}
+                  Sign up to test
+                {{ end }}
+              {{ if $.User }}
+                </button>
+              {{ else }}
+                </a>
+              {{ end }}
+            </div>
           {{ end }}
         </div>
       </div>
     </div>
   {{ end }}
-{{ end }}
-
-{{ define "betaweek-submission" }}
-  {{ $submission := . }}
-  <div class="bg3 pa3 flex flex-column g3">
-    {{ with .Project }}
-      <div class="flex g3">
-        <a href="{{ .Url }}" class="db w3">{{ template "project_logo.html" . }}</a>
-        <div class="flex-grow-1 flex flex-column">
-          <a href="{{ .Url }}"><h3 class="f4">{{ .Name }}</h3></a>
-          <hr class="mv2">
-          <div class="flex flex-wrap items-center g2">
-            {{ with $submission.PlatformIcons }}
-              <!--
-                NOTE(ben): Hardcoding to 24px because that's what our icons are and .svgicon
-                sizes to 1em.
-              -->
-              <div class="flex" style="font-size: 24px; margin-left: -1px">
-                {{ range . }}
-                  <span class="svgicon svgicon-nofix" style="height: 1em">{{ svg .Name .Title }}</span>
-                {{ end }}
-              </div>
-              <div class="h1 bl"></div>
-            {{ end }}
-            {{ range .Owners }}
-              <a href="{{ .ProfileUrl }}" class="flex g1 items-center b">
-                <img class="avatar avatar-user avatar-small" src="{{ .AvatarUrl }}">
-                <span>{{ .Name }}</span>
-              </a>
-            {{ end }}
-          </div>
-        </div>
-      </div>
-    {{ end }}
-    <div class="flex-grow-1 flex flex-column g2">
-      <div class="hide-if-empty flex flex-wrap g2">
-        {{ if .NeedsTesters }}
-          <div class="badge betaweek-badge">Needs testers</div>
-        {{ end }}
-      </div>
-      <div class="post-content">
-        {{ .Description }}
-      </div>
-    </div>
-    <button class="btn-primary">Sign up to test</button>
-  </div>
 {{ end }}

@@ -3,6 +3,15 @@
 
 import { Project } from "./models";
 
+export type BetaWeekSignupPayload = {
+  projectID: number,
+  doTest: boolean,
+};
+
+export type BetaWeekSignupResult = {
+  projects: number[],
+};
+
 export type CheckUsernameResult = { found: false } | {
   found: true,
   username: string,

@@ -36,7 +36,8 @@ func (m BetaWeekUserSignups) Up(ctx context.Context, tx pgx.Tx) error {
 
 		CREATE TABLE betaweek_testing_signup (
 			project_id INTEGER NOT NULL REFERENCES project,
-			user_id INTEGER NOT NULL REFERENCES hmn_user
+			user_id INTEGER NOT NULL REFERENCES hmn_user,
+			PRIMARY KEY (project_id, user_id)
 		)
 	`)
 	return err

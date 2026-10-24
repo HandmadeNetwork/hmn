@@ -425,7 +425,7 @@ func (c *RequestContext) JSONErrorResponse(status int, errs ...error) ResponseDa
 		Errors:     errs,
 	}
 	res.WriteJson(map[string]any{
-		"errors": errs,
+		"ok": false, // NOTE(ben): Don't return errors, as they may reveal internals
 	}, c.Perf)
 	return res
 }
@@ -447,8 +447,9 @@ func (c *RequestContext) RejectRequest(reason string) ResponseData {
 	return res
 }
 
-func (c *RequestContext) JSONRejectRequest(reason string) ResponseData {
-	return c.JSONResponse(http.StatusBadRequest, map[string]any{
+func (c *RequestContext) JSONRejectRequest(status int, reason string) ResponseData {
+	return c.JSONResponse(status, map[string]any{
+		"ok":           false,
 		"rejectReason": reason,
 	})
 }

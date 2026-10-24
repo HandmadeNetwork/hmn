@@ -28,6 +28,13 @@ func OrDefault[T comparable](v T, def T) T {
 	}
 }
 
+func NonNullSlice[S ~[]E, E any](s S) S {
+	if s == nil {
+		return S{}
+	}
+	return s
+}
+
 // Takes an (error) return and panics if there is an error.
 // Helps avoid `if err != nil` in scripts.
 func Must[E comparableError](err E) {

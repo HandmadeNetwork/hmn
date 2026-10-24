@@ -42,12 +42,18 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	}
 	anyProject := routes.WithMiddleware(
 		storeNoticesInCookieMiddleware,
-		loadCurrentUserAndProject,
+		loadCurrentUser(false),
+		loadCurrentOfficialProject,
 	)
 	hmnOnly := anyProject.WithMiddleware(
 		redirectToHMN,
 	)
-	apiRoutes := routes.WithMiddleware(panicCatcherMiddleware(true))
+	apiRoutes := routes.WithMiddleware(
+		// NOTE(ben): Override the previous panic catcher with the JSON version
+		panicCatcherMiddleware(true),
+		// NOTE(ben): Load the current user from cookies, but no project
+		loadCurrentUser(true),
+	)
 
 	// NOTE(ben): Root routes, free of almost all middleware
 	routes.GET(hmnurl.RegexEsBuild, func(c *RequestContext) ResponseData {
@@ -257,6 +263,7 @@ func NewWebsiteRoutes(conn *pgxpool.Pool, perfCollector *perf.PerfCollector) htt
 	hmnOnly.POST(hmnurl.RegexAPICheckUsername, needsAuth(csrfMiddleware(APICheckUsername)))
 	apiRoutes.POST(hmnurl.RegexAPINewsletterSignup, APINewsletterSignup)
 	apiRoutes.POST(hmnurl.RegexAPIProject, APIProject)
+	apiRoutes.POST(hmnurl.RegexAPIBetaWeekSignup, apiNeedsAuth(csrfMiddleware(APIBetaWeekSignup)))
 	apiRoutes.POST(hmnurl.RegexStripeWebhook, StripeWebhook)
 
 	hmnOnly.GET(hmnurl.RegexLibraryAny, func(c *RequestContext) ResponseData {

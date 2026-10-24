@@ -5,12 +5,14 @@ import (
 	"embed"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
 	"net/http"
 	"path"
+	"reflect"
 	"regexp"
 	"sort"
 	"strings"
@@ -196,6 +198,19 @@ var HMNTemplateFuncs = template.FuncMap{
 			a += num
 		}
 		return a
+	},
+	"contains": func(s any, v any) (bool, error) {
+		rs := reflect.ValueOf(s)
+		rv := reflect.ValueOf(v)
+		if rs.Kind() != reflect.Slice {
+			return false, errors.New("requires a slice")
+		}
+		for i := 0; i < rs.Len(); i++ {
+			if rs.Index(i).Equal(rv) {
+				return true, nil
+			}
+		}
+		return false, nil
 	},
 	"strjoin": func(strs ...string) string {
 		return strings.Join(strs, "")
