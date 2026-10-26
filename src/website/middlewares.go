@@ -123,11 +123,8 @@ func csrfMiddleware(h Handler) Handler {
 	// CSRF mitigation actions per the OWASP cheat sheet:
 	// https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html
 	return func(c *RequestContext) ResponseData {
-		csrfToken := "<unknown>"
-		if c.Req.Header.Get("Content-Type") == "multipart/form-data" {
-			c.Req.ParseMultipartForm(100 * 1024 * 1024)
-			csrfToken = c.Req.Form.Get(auth.CSRFFieldName)
-		}
+		c.Req.ParseMultipartForm(100 * 1024 * 1024)
+		csrfToken := c.Req.Form.Get(auth.CSRFFieldName)
 		if headerToken := c.Req.Header.Get("X-HMN-CSRF"); headerToken != "" {
 			csrfToken = headerToken
 		}
