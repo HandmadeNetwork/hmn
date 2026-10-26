@@ -678,8 +678,8 @@ function getLinkData() {
       let serviceName = "";
       let username = "";
       let icon = "website";
-      if (parseKnownServicesForUrl) {
-        const guess = parseKnownServicesForUrl(url);
+      if (window.parseKnownServicesForUrl) {
+        const guess = window.parseKnownServicesForUrl(url);
         icon = guess.icon;
         username = guess.username;
         serviceName = guess.service;

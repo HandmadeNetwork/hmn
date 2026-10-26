@@ -2,10 +2,12 @@ import { initReorderable } from "./reorderable";
 import { makeTemplateCloner } from "./templates";
 import { must } from "./utils";
 
-// NOTE(ben): Set on the window by our Go code.
-declare const parseKnownServicesForUrl:
-  | ((url: string) => { service: string, icon: string, username: string })
-  | null;
+// NOTE(ben): Set on the window by our Go code, if we bother to load it.
+declare global {
+  interface Window {
+    parseKnownServicesForUrl?: (url: string) => { service: string, icon: string, username: string };
+  }
+}
 
 export type LinkData = Array<{
   name: string,
@@ -115,8 +117,8 @@ export function getLinkData(): LinkData {
       let serviceName = "";
       let username = "";
       let icon = "website";
-      if (parseKnownServicesForUrl) {
-        const guess = parseKnownServicesForUrl(url);
+      if (window.parseKnownServicesForUrl) {
+        const guess = window.parseKnownServicesForUrl(url);
         icon = guess.icon;
         username = guess.username;
         serviceName = guess.service;
