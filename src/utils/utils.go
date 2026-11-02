@@ -28,6 +28,13 @@ func OrDefault[T comparable](v T, def T) T {
 	}
 }
 
+func NonNullSlice[S ~[]E, E any](s S) S {
+	if s == nil {
+		return S{}
+	}
+	return s
+}
+
 // Takes an (error) return and panics if there is an error.
 // Helps avoid `if err != nil` in scripts.
 func Must[E comparableError](err E) {
@@ -189,4 +196,19 @@ func MapP[S ~[]E1, E1, E2 any](s S, f func(*E1) E2) []E2 {
 		res[i] = f(&s[i])
 	}
 	return res
+}
+
+func AsMap[S ~[]E1, E1 any, K comparable](s S, f func(E1) K) map[K]E1 {
+	res := make(map[K]E1, len(s))
+	for _, v := range s {
+		res[f(v)] = v
+	}
+	return res
+}
+
+func Btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

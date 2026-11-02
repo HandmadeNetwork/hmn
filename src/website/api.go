@@ -137,3 +137,87 @@ func APIProject(c *RequestContext) ResponseData {
 	}
 	return c.JSONResponse(http.StatusOK, res)
 }
+
+func APIBetaWeekSignup(c *RequestContext) ResponseData {
+	input, err := c.GetJSON[struct {
+		ProjectID int  `json:"projectID"`
+		DoTest    bool `json:"doTest"`
+	}]()
+	if err != nil {
+		return c.JSONRejectRequest(http.StatusBadRequest, "bad JSON")
+	}
+
+	if input.ProjectID == 0 {
+		return c.JSONRejectRequest(http.StatusBadRequest, "missing project ID")
+	}
+
+	tx := utils.Must1(c.Conn.Begin(c))
+	defer tx.Rollback(c)
+
+	p, err := hmndata.FetchProject(c, tx, c.CurrentUser, input.ProjectID, hmndata.ProjectsQuery{})
+	if err == db.NotFound {
+		return c.JSONRejectRequest(http.StatusNotFound, "not found")
+	} else if err != nil {
+		return c.JSONErrorResponse(http.StatusInternalServerError, err)
+	}
+	_, err = db.QueryOneScalar[int](c, tx,
+		`
+		---- Check if project is valid for beta week
+		SELECT project_id FROM betaweek_project_submission
+		WHERE project_id = $1 AND approved
+		`,
+		p.Project.ID,
+	)
+	if err == db.NotFound {
+		return c.JSONRejectRequest(http.StatusBadRequest, "not a beta week project")
+	} else if err != nil {
+		return c.JSONErrorResponse(http.StatusInternalServerError, err)
+	}
+
+	if input.DoTest {
+		utils.Must1(tx.Exec(c,
+			`
+			---- Upsert new signup
+			INSERT INTO betaweek_testing_signup (project_id, user_id)
+			VALUES ($1, $2)
+			ON CONFLICT DO NOTHING
+			`,
+			p.Project.ID, c.CurrentUser.ID,
+		))
+		newNumSignups := utils.Must1(db.QueryOneScalar[int](c, tx,
+			`
+			---- Count signups
+			SELECT COUNT(*) FROM betaweek_testing_signup
+			WHERE user_id = $1
+			`,
+			c.CurrentUser.ID,
+		))
+		if newNumSignups > MaxBetaWeekSignups {
+			return c.JSONRejectRequest(http.StatusBadRequest, "too many signups")
+		}
+	} else {
+		utils.Must1(tx.Exec(c,
+			`
+			---- Delete any signups
+			DELETE FROM betaweek_testing_signup
+			WHERE project_id = $1 AND user_id = $2
+			`,
+			p.Project.ID, c.CurrentUser.ID,
+		))
+	}
+	currentSignups := utils.Must1(db.QueryScalar[int](c, tx,
+		`
+		---- List current signups
+		SELECT project_id FROM betaweek_testing_signup
+		WHERE user_id = $1
+		ORDER BY project_id
+		`,
+		c.CurrentUser.ID,
+	))
+
+	utils.Must(tx.Commit(c))
+
+	return c.JSONResponse(http.StatusOK, map[string]any{
+		"projects": utils.NonNullSlice(currentSignups),
+	})
+}

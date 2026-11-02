@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +20,7 @@ import (
 )
 
 const JamRecentWindow = 14 * 24 * time.Hour
+const MaxBetaWeekSignups = 3
 
 func JamCurrentTime(c *RequestContext, ev hmndata.Event) time.Time {
 	t := time.Now()
@@ -280,18 +282,93 @@ func JamGenericGuidelines(c *RequestContext) ResponseData {
 }
 
 func BetaWeekIndex(c *RequestContext) ResponseData {
-	var res ResponseData
+	const NeedsTestersThreshold = 3
 
+	var res ResponseData
 	type Tmpl struct {
 		templates.BaseData
 		IndexUrl           string
+		SignupUrl          string
+		LoginUrl           string // for unauthenticated users
 		CallForProjectsUrl string
+
+		Projects       []templates.BetaWeekProjectSubmission
+		CurrentSignups []int
+		MaxSignups     int
 	}
+
+	approvedSubmissions, err := db.Query[models.BetaWeekProjectSubmission](c, c.Conn,
+		`
+		---- Fetch Beta Week project list
+		SELECT $columns FROM betaweek_project_submission
+		WHERE approved
+		ORDER BY sort
+		`,
+	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch beta week project submissions"))
+	}
+
+	approvedProjects, err := hmndata.FetchProjects(c, c.Conn, c.CurrentUser, hmndata.ProjectsQuery{
+		ProjectIDs: utils.Map(approvedSubmissions, func(ap *models.BetaWeekProjectSubmission) int {
+			return ap.ProjectID
+		}),
+	})
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch beta week projects"))
+	}
+	projectsByID := utils.AsMap(approvedProjects, func(p hmndata.ProjectAndStuff) int {
+		return p.Project.ID
+	})
+
+	testersPerProjectRows, err := db.Query[struct {
+		ProjectID  int `db:"project_id"`
+		NumTesters int `db:"COUNT(*)"`
+	}](c, c.Conn,
+		`
+		---- Fetch number of testers per project
+		SELECT $columns AS num_testers FROM betaweek_testing_signup
+		GROUP BY project_id
+		`,
+	)
+	testersPerProject := make(map[int]int, len(testersPerProjectRows))
+	for _, row := range testersPerProjectRows {
+		testersPerProject[row.ProjectID] = row.NumTesters
+	}
+
+	var currentSignups []int
+	if c.CurrentUser != nil {
+		currentSignups = utils.Must1(db.QueryScalar[int](c, c.Conn,
+			`
+			---- Fetch current user signups
+			SELECT project_id FROM betaweek_testing_signup
+			WHERE user_id = $1
+			ORDER BY project_id
+			`,
+			c.CurrentUser.ID,
+		))
+	}
+
 	tmpl := Tmpl{
 		BaseData:           getBaseTemplateData(c, "Beta Week", nil),
 		IndexUrl:           hmnurl.BuildBetaWeekIndex(),
+		SignupUrl:          hmnurl.BuildAPIBetaWeekSignup(),
+		LoginUrl:           hmnurl.BuildLoginPage(hmnurl.BuildBetaWeekIndex(), ""),
 		CallForProjectsUrl: hmnurl.BuildBetaWeekCallForProjects(),
+		Projects: utils.Map(approvedSubmissions, func(ps *models.BetaWeekProjectSubmission) templates.BetaWeekProjectSubmission {
+			project := projectsByID[ps.ProjectID]
+			return templates.BetaWeekProjectSubmissionToTemplate(
+				ps,
+				new(templates.ProjectAndStuffToTemplate(&project)),
+				testersPerProject[ps.ProjectID] < NeedsTestersThreshold,
+			)
+		}),
+		CurrentSignups: utils.NonNullSlice(currentSignups),
+		MaxSignups:     MaxBetaWeekSignups,
 	}
+	slices.SortStableFunc(tmpl.Projects, func(a, b templates.BetaWeekProjectSubmission) int {
+		return utils.Btoi(a.NeedsTesters) - utils.Btoi(b.NeedsTesters)
+	})
 
 	opengraph := []templates.OpenGraphItem{
 		{Property: "og:title", Value: hmndata.BetaWeek2026.Name},

@@ -296,9 +296,11 @@ function makeSnippetEdit({
     if (snippetEditor.file.files.length > 0 && snippetEditor.file.files[0].size > config.assetMaxSize) {
       let readableSize = new Intl.NumberFormat([], { useGrouping: true }).format(config.assetMaxSize);
       snippetEditor.errors.textContent = "File is too big! Max filesize is " + readableSize + " bytes.";
+      snippetEditor.errors.hidden = false;
       sizeGood = false;
     } else {
       snippetEditor.errors.textContent = "";
+      snippetEditor.errors.hidden = true;
     }
     let hasText = snippetEditor.text.value.trim().length > 0;
     if ((hasText || hasAttachment) && sizeGood) {

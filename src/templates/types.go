@@ -577,3 +577,15 @@ type Ticket struct {
 
 	OwnerProfileUrl string
 }
+
+type BetaWeekPlatformIcon struct {
+	Name  string
+	Title string
+}
+
+type BetaWeekProjectSubmission struct {
+	Project       *Project
+	Description   string
+	PlatformIcons []BetaWeekPlatformIcon
+	NeedsTesters  bool
+}

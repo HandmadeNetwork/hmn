@@ -316,7 +316,7 @@ func TicketsAdminScanSubmit(c *RequestContext) ResponseData {
 	eventUrlSlug := c.PathParams["urlslug"]
 	event, found := hmndata.FindTicketEventBySlug(eventUrlSlug)
 	if !found {
-		return c.JSONRejectRequest("Event slug not found")
+		return c.JSONRejectRequest(http.StatusBadRequest, "Event slug not found")
 	}
 	c.Req.ParseForm()
 	command := c.Req.Form.Get("command")
@@ -324,12 +324,12 @@ func TicketsAdminScanSubmit(c *RequestContext) ResponseData {
 
 	ticketUrl, err := url.Parse(ticketData)
 	if err != nil {
-		return c.JSONRejectRequest("Couldn't parse ticket data as url")
+		return c.JSONRejectRequest(http.StatusBadRequest, "Couldn't parse ticket data as url")
 	}
 	match := hmnurl.RegexTicketScanned.FindStringSubmatch(ticketUrl.Path)
 	matchIdx := hmnurl.RegexTicketSingle.SubexpIndex("id")
 	if len(match) <= matchIdx || match[matchIdx] == "" {
-		return c.JSONRejectRequest("Ticket data does not contain id")
+		return c.JSONRejectRequest(http.StatusBadRequest, "Ticket data does not contain id")
 	}
 
 	ticketId := match[matchIdx]
@@ -343,14 +343,14 @@ func TicketsAdminScanSubmit(c *RequestContext) ResponseData {
 	)
 	if err != nil {
 		if err == db.NotFound {
-			return c.JSONRejectRequest("Ticket not found")
+			return c.JSONRejectRequest(http.StatusBadRequest, "Ticket not found")
 		} else {
 			return c.JSONErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch ticket details"))
 		}
 	}
 
 	if ticket.EventSlug != event.Slug {
-		return c.JSONRejectRequest(fmt.Sprintf("Ticket is for %s, but currently scanning for %s", ticket.EventSlug, event.Slug))
+		return c.JSONRejectRequest(http.StatusBadRequest, fmt.Sprintf("Ticket is for %s, but currently scanning for %s", ticket.EventSlug, event.Slug))
 	}
 
 	renderTicketInfo := func(ticket *models.Ticket, message string) ResponseData {
@@ -380,7 +380,7 @@ func TicketsAdminScanSubmit(c *RequestContext) ResponseData {
 		}
 		return renderTicketInfo(ticket, "Checked-in successfully")
 	default:
-		return c.JSONRejectRequest("Bad command")
+		return c.JSONRejectRequest(http.StatusBadRequest, "Bad command")
 	}
 }
 

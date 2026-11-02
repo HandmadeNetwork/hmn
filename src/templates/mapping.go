@@ -118,6 +118,9 @@ func ProjectToTemplate(
 	}
 }
 
+// TODO(ben): Man it is terrible that this takes a pointer and yet our db query
+// helpers return non-pointers. Probably the db query stuff should suck it up
+// and return pointers. I dunno.
 func ProjectAndStuffToTemplate(p *hmndata.ProjectAndStuff) Project {
 	res := ProjectToTemplate(&p.Project)
 	res.Logo = AssetUrl(p.LogoAsset)
@@ -566,11 +569,31 @@ func TicketToTemplate(t *models.Ticket) Ticket {
 	return res
 }
 
-func maybeString(s *string) string {
-	if s == nil {
-		return ""
+func BetaWeekProjectSubmissionToTemplate(
+	s *models.BetaWeekProjectSubmission,
+	project *Project,
+	needsTesters bool,
+) BetaWeekProjectSubmission {
+	// Remap platform names to icon names
+	var icons []BetaWeekPlatformIcon
+	for _, platform := range s.PlatformList {
+		switch platform {
+		case "windows":
+			icons = append(icons, BetaWeekPlatformIcon{Name: "logos/microsoft", Title: "Windows"})
+		case "mac":
+			icons = append(icons, BetaWeekPlatformIcon{Name: "logos/apple", Title: "macOS"})
+		case "linux":
+			icons = append(icons, BetaWeekPlatformIcon{Name: "logos/linux", Title: "Linux"})
+		case "web":
+			icons = append(icons, BetaWeekPlatformIcon{Name: "logos/website", Title: "Web"})
+		}
 	}
-	return *s
+	return BetaWeekProjectSubmission{
+		Project:       project,
+		Description:   s.Description,
+		PlatformIcons: icons,
+		NeedsTesters:  needsTesters,
+	}
 }
 
 func maybeIp(ip *netip.Prefix) string {

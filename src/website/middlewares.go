@@ -79,6 +79,16 @@ func needsAuthWithNotice(h Handler, notice string) Handler {
 	}
 }
 
+func apiNeedsAuth(h Handler) Handler {
+	return func(c *RequestContext) ResponseData {
+		if c.CurrentUser == nil {
+			return c.JSONRejectRequest(http.StatusUnauthorized, "auth required")
+		}
+
+		return h(c)
+	}
+}
+
 func adminsOnly(h Handler) Handler {
 	return func(c *RequestContext) ResponseData {
 		if c.CurrentUser == nil || !c.CurrentUser.IsStaff {
@@ -115,6 +125,9 @@ func csrfMiddleware(h Handler) Handler {
 	return func(c *RequestContext) ResponseData {
 		c.Req.ParseMultipartForm(100 * 1024 * 1024)
 		csrfToken := c.Req.Form.Get(auth.CSRFFieldName)
+		if headerToken := c.Req.Header.Get("X-HMN-CSRF"); headerToken != "" {
+			csrfToken = headerToken
+		}
 		if c.CurrentSession == nil || csrfToken != c.CurrentSession.CSRFToken {
 			username := "Unknown user"
 			if c.CurrentUser != nil {
