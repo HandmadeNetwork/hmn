@@ -367,7 +367,7 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 		MaxSignups:     MaxBetaWeekSignups,
 	}
 	slices.SortStableFunc(tmpl.Projects, func(a, b templates.BetaWeekProjectSubmission) int {
-		return utils.Btoi(a.NeedsTesters) - utils.Btoi(b.NeedsTesters)
+		return utils.Btoi(b.NeedsTesters) - utils.Btoi(a.NeedsTesters)
 	})
 
 	opengraph := []templates.OpenGraphItem{
