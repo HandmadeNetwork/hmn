@@ -331,6 +331,9 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 		GROUP BY project_id
 		`,
 	)
+	if err != nil {
+		return c.ErrorResponse(http.StatusInternalServerError, oops.New(err, "failed to fetch tester counts"))
+	}
 	testersPerProject := make(map[int]int, len(testersPerProjectRows))
 	for _, row := range testersPerProjectRows {
 		testersPerProject[row.ProjectID] = row.NumTesters
@@ -361,6 +364,7 @@ func BetaWeekIndex(c *RequestContext) ResponseData {
 				ps,
 				new(templates.ProjectAndStuffToTemplate(&project)),
 				testersPerProject[ps.ProjectID] < NeedsTestersThreshold,
+				testersPerProject[ps.ProjectID],
 			)
 		}),
 		CurrentSignups: utils.NonNullSlice(currentSignups),

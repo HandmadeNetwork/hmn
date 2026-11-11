@@ -573,6 +573,7 @@ func BetaWeekProjectSubmissionToTemplate(
 	s *models.BetaWeekProjectSubmission,
 	project *Project,
 	needsTesters bool,
+	numTesters int,
 ) BetaWeekProjectSubmission {
 	// Remap platform names to icon names
 	var icons []BetaWeekPlatformIcon
@@ -593,6 +594,7 @@ func BetaWeekProjectSubmissionToTemplate(
 		Description:   s.Description,
 		PlatformIcons: icons,
 		NeedsTesters:  needsTesters,
+		NumTesters:    numTesters,
 	}
 }
 
