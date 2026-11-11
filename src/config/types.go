@@ -91,6 +91,7 @@ type DiscordConfig struct {
 	LibraryChannelID        string
 	StreamsChannelID        string
 	ShowcaseWhitelistRoleID string
+	BetaWeekTesterRoleID    string
 }
 
 type TwitchConfig struct {

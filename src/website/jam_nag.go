@@ -29,6 +29,7 @@ func NagUsersToCreateJamProjectsJob(dbConn *pgxpool.Pool) *jobs.Job {
 		}()
 		log.Info().Msg("Running jam project creation nag bot")
 
+		// TODO(ben): wtf this is not a ticker, it's a timer, so did this ever work???
 		t := time.NewTimer(time.Minute)
 		lastTime := time.Now()
 

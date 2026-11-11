@@ -28,6 +28,14 @@ func OrDefault[T comparable](v T, def T) T {
 	}
 }
 
+func Ternary[T any](cond bool, ifTrue, ifFalse T) T {
+	if cond {
+		return ifTrue
+	} else {
+		return ifFalse
+	}
+}
+
 func NonNullSlice[S ~[]E, E any](s S) S {
 	if s == nil {
 		return S{}

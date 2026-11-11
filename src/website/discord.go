@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 	"strings"
 	"time"
 
@@ -12,12 +13,15 @@ import (
 	"git.handmade.network/hmn/hmn/src/config"
 	"git.handmade.network/hmn/hmn/src/db"
 	"git.handmade.network/hmn/hmn/src/discord"
+	"git.handmade.network/hmn/hmn/src/hmndata"
 	"git.handmade.network/hmn/hmn/src/hmnurl"
+	"git.handmade.network/hmn/hmn/src/jobs"
 	"git.handmade.network/hmn/hmn/src/models"
 	"git.handmade.network/hmn/hmn/src/oops"
 	"git.handmade.network/hmn/hmn/src/templates"
 	"git.handmade.network/hmn/hmn/src/utils"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // This callback handles Discord account linking whether the user is signed in
@@ -462,4 +466,120 @@ func DiscordBotDebugPage(c *RequestContext) ResponseData {
 		BotEvents: botEvents,
 	}, c.Perf)
 	return res
+}
+
+func DiscordRoleSyncJob(conn *pgxpool.Pool) *jobs.Job {
+	job := jobs.New("discord role sync bot")
+	log := job.Logger.With().Str("job", "discord role sync").Logger()
+
+	if config.Config.Discord.BotToken == "" {
+		log.Warn().Msg("No Discord bot token was provided, so the role sync cannot run.")
+		return job.Finish()
+	}
+
+	go func() {
+		defer func() {
+			log.Info().Msg("Shutting down Discord role sync bot")
+			job.Finish()
+		}()
+		log.Info().Msg("Running Discord role sync bot")
+
+		t := utils.NewInstaTicker(time.Minute * 10)
+		for {
+			select {
+			case <-t.C:
+				logs, err := SyncDiscordRoles(job.Ctx, conn)
+				if err != nil {
+					log.Error().Strs("logs", logs).Err(err).Msg("Failed to sync Discord roles")
+				} else {
+					log.Info().Strs("logs", logs).Msg("Roles synced successfully")
+				}
+			case <-job.Canceled():
+				return
+			}
+		}
+	}()
+
+	return job
+}
+
+func SyncDiscordRoles(ctx context.Context, conn db.ConnOrTx) ([]string, error) {
+	// NOTE(ben): Fetch literally all users, who cares (at least those publicly visible)
+	allHMNUsers, err := hmndata.FetchUsers(ctx, conn, nil, hmndata.UsersQuery{})
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch users")
+	}
+
+	allDiscordUsers, err := discord.ListGuildMembers(ctx, config.Config.Discord.GuildID)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch Discord users")
+	}
+	discordUsersByID := make(map[string]*discord.GuildMember)
+	for i := range allDiscordUsers {
+		discordUsersByID[allDiscordUsers[i].User.ID] = &allDiscordUsers[i]
+	}
+
+	betaWeekUserIDs, err := db.QueryScalar[int](ctx, conn,
+		`
+		---- Fetch users IDs of beta week testers
+		SELECT DISTINCT user_id FROM betaweek_testing_signup
+		`,
+	)
+	if err != nil {
+		return nil, oops.New(err, "failed to fetch beta week tester IDs")
+	}
+	isBetaWeekTester := make(map[int]bool)
+	for _, userID := range betaWeekUserIDs {
+		isBetaWeekTester[userID] = true
+	}
+
+	var logs []string
+	var errs []error
+	idempoteAndLog := func(ctx context.Context, discordUser *discord.GuildMember, roleID string, roleDesc string, shouldHave bool) {
+		result, err := idempoteRole(ctx, discordUser, roleID, shouldHave)
+		if err == nil {
+			if result != 0 {
+				logs = append(logs, fmt.Sprintf(
+					"%s (%s): %s %s role",
+					discordUser.User.ID, discordUser.User.Username, utils.Ternary(result > 0, "Added", "Removed"), roleDesc,
+				))
+			}
+		} else {
+			errs = append(errs, err)
+		}
+	}
+
+	for _, user := range allHMNUsers {
+		if user.DiscordUser == nil {
+			continue
+		}
+		discordUser, ok := discordUsersByID[user.DiscordUser.UserID]
+		if !ok {
+			// NOTE(ben): Not in the guild anymore, can't change roles
+			continue
+		}
+
+		// NOTE(ben): In both of these cases we actually only want to add roles,
+		// not remove them.
+		if config.Config.Discord.MemberRoleID != "" {
+			idempoteAndLog(ctx, discordUser, config.Config.Discord.MemberRoleID, "member", true)
+		}
+		if config.Config.Discord.BetaWeekTesterRoleID != "" && isBetaWeekTester[user.ID] {
+			idempoteAndLog(ctx, discordUser, config.Config.Discord.BetaWeekTesterRoleID, "beta week tester", true)
+		}
+	}
+
+	return logs, errors.Join(errs...)
+}
+
+// NOTE(ben): Idempote is a verb
+func idempoteRole(ctx context.Context, discordUser *discord.GuildMember, roleID string, shouldHave bool) (int, error) {
+	has := slices.Contains(discordUser.Roles, roleID)
+	if !has && shouldHave {
+		return 1, discord.AddGuildMemberRole(ctx, discordUser.User.ID, roleID)
+	}
+	if has && !shouldHave {
+		return -1, discord.RemoveGuildMemberRole(ctx, discordUser.User.ID, roleID)
+	}
+	return 0, nil
 }

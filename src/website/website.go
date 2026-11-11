@@ -56,6 +56,7 @@ var WebsiteCommand = &cobra.Command{
 			bundle.RunEsBuildServer(),
 			email.MonitorBounces(conn),
 			NagUsersToCreateJamProjectsJob(conn),
+			DiscordRoleSyncJob(conn),
 		}
 
 		// Create HTTP server
